@@ -1,73 +1,23 @@
-# React + TypeScript + Vite
+> **Note:** This project serves as a technical showcase for my portfolio.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+### 🔗 [View Live Demo](https://blobbo-prjct-vercel.vercel.app/)
 
-Currently, two official plugins are available:
+## Technical Highlights
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The core of this project is the custom parsing engine located in `src/lib/DocEngine.tsx`.
 
-## React Compiler
+*   **Custom XML Parser:** Instead of using heavy Markdown libraries, I implemented a parser using the native browser `DOMParser` API.
+*   **Optimization:** Heavy parsing operations are wrapped in `useMemo` hooks. This ensures the UI remains responsive and prevents unnecessary re-renders when navigating between tabs.
+*   **Dynamic Routing:** The application reads the configuration file and automatically generates the sidebar navigation and routes.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Key Features
 
-## Expanding the ESLint configuration
+*   **Rich Text Rendering:** Supports custom tags like `<warning>`, `<info>`, and `<code-block>` designed specifically for technical documentation.
+*   **Responsive Design:** Fully adaptive layout for mobile and desktop devices.
+*   **Type Safety:** Strict TypeScript configuration for better maintainability.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+*   **Core:** React 18, TypeScript, Vite
+*   **Styling:** Styled-Components (CSS-in-JS)
+*   **Deployment:** Vercel (CI/CD)
