@@ -53,7 +53,7 @@ export const DOCS_XML = `
              <card title="Telegram" href="https://t.me/holyresume">Update channel</card>
         </col>
         <col>
-             <card title="GitHub" href="https://github.com">Project source code</card>
+             <card title="GitHub" href="https://github.com/whitfielfur/blobbo-prjct">Project source code</card>
         </col>
         <col>
              <card title="Support" href="https://t.me/arthurfur">Support service</card>
