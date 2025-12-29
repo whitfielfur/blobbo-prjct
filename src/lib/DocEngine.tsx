@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react';
+import React, { useState, ReactNode, useMemo, useCallback, memo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
   ChevronDown, Terminal, AlertCircle, Info, 
@@ -8,39 +8,28 @@ import {
   Maximize2, Code2, List, MousePointerClick, Zap
 } from 'lucide-react';
 
-const CopyButton = ({ text }: { text: string }) => {
+// Global cache to avoid redundant DOM parsing
+const parsedCache = new Map<string, Document>();
+
+const CopyButton = memo(({ text }: { text: string }) => {
   const [copied, setCopied] = useState(false);
   
-  const handleCopy = () => {
-    // TODO: navigator.clipboard might fail in non-secure contexts (http)
-    // Should probably add a fallback, who the hell uses http in 2025?
+  const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
+  }, [text]);
 
   return (
     <button onClick={handleCopy} className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-gray-400 hover:text-white">
       {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
     </button>
   );
-};
+});
 
-const ImageBlock = ({ src, alt, caption, align = 'center', width = 'full', shadow = 'true' }: any) => {
-  // If Tailwind's JIT compiler misses these, the layout breaks
-  // Ideally, we should use a proper class library like clsx or cva
-  const alignClass = {
-    left: 'mr-auto',
-    center: 'mx-auto',
-    right: 'ml-auto'
-  }[align as string] || 'mx-auto';
-
-  const widthClass = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-2xl',
-    full: 'w-full'
-  }[width as string] || 'w-full';
+const ImageBlock = memo(({ src, alt, caption, align = 'center', width = 'full', shadow = 'true' }: any) => {
+  const alignClass = align === 'left' ? 'mr-auto' : align === 'right' ? 'ml-auto' : 'mx-auto';
+  const widthClass = width === 'sm' ? 'max-w-sm' : width === 'md' ? 'max-w-md' : width === 'lg' ? 'max-w-2xl' : 'w-full';
 
   return (
     <div className={`my-8 ${alignClass} ${widthClass}`}>
@@ -50,7 +39,6 @@ const ImageBlock = ({ src, alt, caption, align = 'center', width = 'full', shado
            <button 
              onClick={() => window.open(src, '_blank')} 
              className="p-1.5 bg-black/60 backdrop-blur rounded text-white hover:bg-black/80 transition-colors"
-             title="Open original"
            >
              <Maximize2 size={14}/>
            </button>
@@ -63,11 +51,9 @@ const ImageBlock = ({ src, alt, caption, align = 'center', width = 'full', shado
       )}
     </div>
   );
-};
+});
 
-const TabsBlock = ({ children }: { children: ReactNode[] }) => {
-    // HACK: We are inspecting React.Children props directly
-    // If the child is wrapped in another component (like a HOC), this breaks
+const TabsBlock = memo(({ children }: { children: ReactNode[] }) => {
     const tabs = React.Children.toArray(children).filter(child => React.isValidElement(child)) as React.ReactElement[];
     if (tabs.length === 0) return null;
 
@@ -78,8 +64,6 @@ const TabsBlock = ({ children }: { children: ReactNode[] }) => {
             <div className="flex border-b border-white/5 bg-white/[0.02] overflow-x-auto scrollbar-hide">
                 {tabs.map((tab, idx) => (
                     <button
-                        // TODO: Using index as key is generally bad, but since these tabs 
-                        // are static and come from XML, it's *probably* fine. Probably... :D
                         key={idx}
                         onClick={() => setActiveTab(idx)}
                         className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
@@ -88,7 +72,6 @@ const TabsBlock = ({ children }: { children: ReactNode[] }) => {
                             : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/5'
                         }`}
                     >
-                        {/* Accessing .props.title directly. React team would frown at this */}
                         {tab.props.title || `Tab ${idx + 1}`}
                     </button>
                 ))}
@@ -98,12 +81,9 @@ const TabsBlock = ({ children }: { children: ReactNode[] }) => {
             </div>
         </div>
     );
-};
+});
 
-const CodeBlock = ({ lang, title, children }: any) => {
-    // HACK: Handling children that might be ReactNodes or strings
-    // We need raw text for the clipboard. If children is a complex tree 
-    // .props.children might be undefined or an object, crashing the copy function
+const CodeBlock = memo(({ lang, title, children }: any) => {
     const textContent = typeof children === 'string' ? children : children?.props?.children || '';
     
     return (
@@ -121,27 +101,9 @@ const CodeBlock = ({ lang, title, children }: any) => {
             </pre>
         </div>
     );
-};
+});
 
-const VideoBlock = ({ src, type = 'youtube', title }: any) => {
-    return (
-        <div className="my-8 rounded-xl overflow-hidden border border-white/10 bg-black aspect-video relative group">
-            {type === 'youtube' ? (
-                <iframe 
-                    src={src} 
-                    title={title || "Video player"} 
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowFullScreen 
-                />
-            ) : (
-                <video controls className="w-full h-full" src={src} />
-            )}
-        </div>
-    );
-};
-
-const CommandBlock = ({ name, desc, children, tag }: any) => {
+const CommandBlock = memo(({ name, desc, children, tag }: any) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <div className={`group mb-4 border border-white/5 rounded-xl transition-all duration-300 ${isOpen ? 'bg-white/[0.02] border-white/10' : 'hover:border-white/10'}`}>
@@ -150,10 +112,10 @@ const CommandBlock = ({ name, desc, children, tag }: any) => {
         className="w-full flex items-center justify-between p-4 text-left"
       >
         <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <code className="text-orange-400 font-mono font-bold text-sm bg-orange-500/10 px-2 py-1 rounded border border-orange-500/20 shadow-[0_0_10px_rgba(249,115,22,0.1)]">
+          <code className="text-orange-400 font-mono font-bold text-sm bg-orange-500/10 px-2 py-1 rounded border border-orange-500/20">
             {name}
           </code>
-          {tag && <span className="text-[10px] font-bold text-gray-500 uppercase border border-white/10 px-1.5 py-0.5 rounded tracking-wider">{tag}</span>}
+          {tag && <span className="text-[10px] font-bold text-gray-500 uppercase border border-white/10 px-1.5 py-0.5 rounded">{tag}</span>}
           <span className="text-gray-300 font-medium text-sm">{desc}</span>
         </div>
         <ChevronDown className={`text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-180 text-orange-400' : ''}`} size={16} />
@@ -164,6 +126,7 @@ const CommandBlock = ({ name, desc, children, tag }: any) => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 pt-0 space-y-3 text-gray-400 border-t border-white/5 mt-2">
@@ -174,50 +137,38 @@ const CommandBlock = ({ name, desc, children, tag }: any) => {
       </AnimatePresence>
     </div>
   );
-};
+});
 
-//
-//
-//  THE ENGINE CORE
-//  This is where the mess happens
-//  We recursively traverse the XML DOM and turn it into React
-//
-//  Why not use a library? Because we like pain
-//  Also because it gives us 100% control over the component mapping
-//
-//
-//
-//
+const DynamicIcon = memo(({ name }: { name: string }) => {
+    const map: any = { globe: Globe, server: Server, credit: CreditCard, layout: Layout, hash: Hash, zap: Zap, list: List, mouse: MousePointerClick };
+    const I = map[name] || Hash;
+    return <I size={24} />;
+});
+
 const renderNode = (node: Node, key: number): ReactNode => {
   if (node.nodeType === Node.TEXT_NODE) {
     const text = node.textContent;
-    // HACK: XML parsers treat newlines/indentation as text nodes
-    // If we don't trim this, our layout gets filled with random empty spans
     if (!text?.trim() && text?.includes('\n')) return null;
-    return <span key={key}>{text}</span>;
+    return <React.Fragment key={key}>{text}</React.Fragment>;
   }
 
-  // If for some reason we get a Comment node or something weird, bail out
   if (node.nodeType !== Node.ELEMENT_NODE) return null;
   
   const el = node as Element;
   const tagName = el.tagName.toLowerCase();
-
   const attrs: Record<string, string> = {};
+  
   if (el.attributes) {
-    Array.from(el.attributes).forEach(attr => attrs[attr.name] = attr.value);
+    for (let i = 0; i < el.attributes.length; i++) {
+      const attr = el.attributes[i];
+      attrs[attr.name] = attr.value;
+    }
   }
 
-  // This can technically cause a stack overflow if you nest 
-  // 10,000 tags. Don't do that
   const getChildren = () => Array.from(el.childNodes).map((c, i) => renderNode(c, i)).filter(Boolean);
   const getRawText = () => el.textContent || '';
 
-  // TODO: This switch statement is growing uncontrollably
-  // I should probably move this to a configuration object or a Map map into map X2
-  // But for now... behold the wall of code
   switch (tagName) {
-    // --- STRUCTURE ---
     case 'section':
       return <section key={key} id={attrs.id} className="scroll-mt-32 mb-20">{getChildren()}</section>;
     case 'grid':
@@ -226,8 +177,6 @@ const renderNode = (node: Node, key: number): ReactNode => {
       return <div key={key} className="flex flex-col gap-4">{getChildren()}</div>;
     case 'separator':
       return <hr key={key} className="border-white/5 my-12" />;
-    
-    // --- TYPOGRAPHY ---
     case 'h1':
       return <h1 key={key} className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight bg-gradient-to-br from-white to-gray-500 bg-clip-text text-transparent inline-block">{getChildren()}</h1>;
     case 'h2':
@@ -235,7 +184,6 @@ const renderNode = (node: Node, key: number): ReactNode => {
         <h2 key={key} className="text-2xl font-bold text-white mb-6 mt-10 flex items-center gap-3 group border-b border-white/5 pb-4">
           {attrs.icon && <span className="text-orange-500 opacity-80"><DynamicIcon name={attrs.icon} /></span>}
           {getChildren()}
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 text-lg select-none">#</span>
         </h2>
       );
     case 'h3':
@@ -252,23 +200,11 @@ const renderNode = (node: Node, key: number): ReactNode => {
                 {attrs.author && <footer className="text-xs text-gray-500 mt-2 not-italic font-bold">— {attrs.author}</footer>}
             </blockquote>
         );
-
-    // --- MEDIA ---
-    case 'img':
-        return <ImageBlock key={key} {...attrs} />;
-    case 'video':
-        return <VideoBlock key={key} {...attrs} />;
-
-    // --- LISTS (The Logic Here is A Bit... Sketchy) ---
+    case 'img': return <ImageBlock key={key} {...attrs} />;
     case 'list':
-        const isOrdered = attrs.type === 'ordered' || attrs.type === '1';
         const isCheck = attrs.type === 'check';
-        const ListTag = isOrdered ? 'ol' : 'ul';
-        const listClass = isCheck ? 'space-y-2' : isOrdered ? 'list-decimal list-outside ml-5 space-y-2 text-gray-400' : 'list-disc list-outside ml-5 space-y-2 text-gray-400';
-        
+        const ListTag = attrs.type === 'ordered' ? 'ol' : 'ul';
         if (isCheck) {
-            // HACK: Custom parsing for checklists because standard <li> doesn't support checked state easily
-            // We iterate over children manually
             return (
                 <div key={key} className="space-y-2 my-4">
                     {Array.from(el.childNodes).map((child, idx) => {
@@ -286,93 +222,31 @@ const renderNode = (node: Node, key: number): ReactNode => {
                 </div>
             )
         }
-        return <ListTag key={key} className={`${listClass} my-4`}>{getChildren()}</ListTag>;
-    case 'li':
-        return <li key={key}>{getChildren()}</li>;
-
-    // --- TABLES ---
-    case 'table':
-        return (
-            <div key={key} className="my-6 overflow-x-auto rounded-lg border border-white/10">
-                <table className="w-full text-left text-sm text-gray-400">
-                    {getChildren()}
-                </table>
-            </div>
-        );
-    case 'thead':
-        return <thead key={key} className="bg-white/5 text-gray-200 uppercase font-bold">{getChildren()}</thead>;
-    case 'tbody':
-        return <tbody key={key} className="divide-y divide-white/5">{getChildren()}</tbody>;
-    case 'tr':
-        return <tr key={key} className="hover:bg-white/[0.02] transition-colors">{getChildren()}</tr>;
-    case 'th':
-        return <th key={key} className="px-4 py-3 font-medium whitespace-nowrap">{getChildren()}</th>;
-    case 'td':
-        return <td key={key} className="px-4 py-3 align-top">{getChildren()}</td>;
-
-    // --- TECH BLOCKS ---
-    case 'codeblock':
-        // Note: passing raw text is crucial here
-        return <CodeBlock key={key} {...attrs}>{getRawText()}</CodeBlock>;
-    case 'cmd':
-      return <CommandBlock key={key} {...attrs}>{getChildren()}</CommandBlock>;
+        return <ListTag key={key} className="list-inside ml-2 space-y-2 text-gray-400 my-4">{getChildren()}</ListTag>;
+    case 'li': return <li key={key}>{getChildren()}</li>;
+    case 'codeblock': return <CodeBlock key={key} {...attrs}>{getRawText()}</CodeBlock>;
+    case 'cmd': return <CommandBlock key={key} {...attrs}>{getChildren()}</CommandBlock>;
     case 'usage':
       return (
-        <div key={key} className="bg-black/40 rounded-lg p-3 border border-white/5 my-3 font-mono text-sm text-gray-300 flex items-start gap-3 overflow-x-auto group">
+        <div key={key} className="bg-black/40 rounded-lg p-3 border border-white/5 my-3 font-mono text-sm text-gray-300 flex items-start gap-3 group">
             <Terminal size={16} className="text-gray-600 mt-0.5 shrink-0" />
             <span className="whitespace-pre-wrap flex-1">{getChildren()}</span>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                <CopyButton text={getRawText()} />
-            </div>
+            <CopyButton text={getRawText()} />
         </div>
       );
-    case 'api':
-       const methods: any = { GET: 'text-blue-400 bg-blue-500/10', POST: 'text-green-400 bg-green-500/10', DELETE: 'text-red-400 bg-red-500/10', PUT: 'text-yellow-400 bg-yellow-500/10' };
-       return (
-        <div key={key} className="my-6 rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
-            <div className="flex items-center gap-3 p-3 border-b border-white/5 bg-black/20">
-                <span className={`font-mono font-bold text-[10px] px-2 py-0.5 rounded ${methods[attrs.method] || methods.GET}`}>{attrs.method}</span>
-                <code className="text-gray-300 font-mono text-sm">{attrs.url}</code>
-            </div>
-            <div className="p-4 text-sm text-gray-400">{getChildren()}</div>
-        </div>
-       );
-
-    // --- INTERACTIVE ---
-    case 'tabs':
-        return <TabsBlock key={key}>{getChildren()}</TabsBlock>;
-    case 'tab':
-        // Pseudo-element used by TabsBlock. It renders a div but the real data is pulled from attrs
-        return <div key={key} title={attrs.title} className="animate-in fade-in slide-in-from-top-2 duration-300">{getChildren()}</div>;
-    
-    case 'details':
-        // God, native HTML <details> is awesome. No JS needed for the toggle!
-        return (
-            <details key={key} className="my-4 group border border-white/5 rounded-lg bg-white/[0.01] open:bg-white/[0.03]">
-                <summary className="flex items-center justify-between p-3 cursor-pointer list-none font-medium text-gray-300 hover:text-white">
-                    <span className="flex items-center gap-2"><Info size={16} className="text-orange-500"/> {attrs.summary}</span>
-                    <ChevronDown size={16} className="group-open:rotate-180 transition-transform text-gray-500" />
-                </summary>
-                <div className="px-4 pb-4 pt-0 text-sm text-gray-400 border-t border-white/5 pt-3">
-                    {getChildren()}
-                </div>
-            </details>
-        );
-
-    // --- UI ELEMENTS ---
+    case 'tabs': return <TabsBlock key={key}>{getChildren()}</TabsBlock>;
+    case 'tab': return <div key={key} title={attrs.title}>{getChildren()}</div>;
     case 'alert':
         const themes: any = {
-            info: { icon: Info, color: 'text-blue-400', border: 'border-blue-500/20 bg-blue-500/5' },
-            warn: { icon: AlertTriangle, color: 'text-orange-400', border: 'border-orange-500/20 bg-orange-500/5' },
-            danger: { icon: AlertCircle, color: 'text-red-400', border: 'border-red-500/20 bg-red-500/5' },
-            success: { icon: CheckCircle2, color: 'text-green-400', border: 'border-green-500/20 bg-green-500/5' }
+            info: 'border-blue-500/20 bg-blue-500/5 text-blue-400',
+            warn: 'border-orange-500/20 bg-orange-500/5 text-orange-400',
+            danger: 'border-red-500/20 bg-red-900/10 text-red-400',
+            success: 'border-green-500/20 bg-green-500/5 text-green-400'
         };
-        const t = themes[attrs.type] || themes.info;
-        const Icon = t.icon;
         return (
-            <div key={key} className={`my-6 p-4 rounded-lg border flex gap-3 ${t.border}`}>
-                <Icon size={20} className={`shrink-0 mt-0.5 ${t.color}`} />
-                <div className="text-gray-300 text-sm leading-relaxed w-full">{getChildren()}</div>
+            <div key={key} className={`my-6 p-4 rounded-lg border flex gap-3 ${themes[attrs.type] || themes.info}`}>
+                <Info size={20} className="shrink-0 mt-0.5" />
+                <div className="text-gray-300 text-sm leading-relaxed">{getChildren()}</div>
             </div>
         );
     case 'card':
@@ -380,130 +254,50 @@ const renderNode = (node: Node, key: number): ReactNode => {
             <a key={key} href={attrs.href} target="_blank" rel="noreferrer" className="block p-4 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-orange-500/30 transition-all group no-underline my-4">
                 <div className="flex items-center justify-between mb-2">
                     <span className="font-bold text-gray-200 group-hover:text-orange-400 transition-colors">{attrs.title}</span>
-                    <ExternalLink size={14} className="text-gray-600 group-hover:text-orange-500" />
+                    <ExternalLink size={14} className="text-gray-600" />
                 </div>
                 <div className="text-sm text-gray-500">{getChildren()}</div>
             </a>
         );
-    case 'step':
-        return (
-            <div key={key} className="flex gap-4 mb-8 relative">
-                <div className="absolute left-[15px] top-10 bottom-[-20px] w-0.5 bg-white/5 last:hidden" />
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#0f0f12] border border-orange-500/30 text-orange-400 flex items-center justify-center font-bold text-sm shadow-[0_0_10px_rgba(249,115,22,0.15)] z-10">
-                    {attrs.num}
-                </div>
-                <div className="pt-1 w-full">
-                    <h4 className="font-bold text-gray-200 mb-1 text-base">{attrs.title}</h4>
-                    <div className="text-gray-400 text-sm leading-relaxed">{getChildren()}</div>
-                </div>
-            </div>
-        );
-    
-    // --- INLINE STUFF ---
     case 'b': return <strong key={key} className="font-bold text-gray-200">{getChildren()}</strong>;
-    case 'i': return <em key={key} className="italic text-gray-400">{getChildren()}</em>;
-    case 'u': return <u key={key} className="decoration-orange-500/50 underline-offset-4">{getChildren()}</u>;
-    case 'kbd': return <kbd key={key} className="bg-white/10 border border-white/20 rounded px-1.5 py-0.5 text-[10px] font-mono text-gray-200 mx-1 shadow-sm font-bold align-middle">{getChildren()}</kbd>;
-    case 'code': return <code key={key} className="bg-[#1a1a1e] border border-white/10 rounded px-1.5 py-0.5 text-sm font-mono text-orange-300 mx-1">{getChildren()}</code>;
-    case 'link': 
-        return <a key={key} href={attrs.href} className="text-orange-400 hover:text-orange-300 hover:underline decoration-orange-500/30 underline-offset-2 transition-colors inline-flex items-center gap-0.5">{getChildren()}<LinkIcon size={10} className="opacity-50"/></a>;
-    case 'badge': 
-        const bColors: any = { red: 'text-red-400 bg-red-500/10', green: 'text-green-400 bg-green-500/10', orange: 'text-orange-400 bg-orange-500/10', blue: 'text-blue-400 bg-blue-500/10' };
-        return <span key={key} className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-white/5 ml-2 align-middle ${bColors[attrs.color] || bColors.orange}`}>{getChildren()}</span>;
-    case 'tooltip':
-        return (
-            <span key={key} className="relative group border-b border-dotted border-gray-500 cursor-help">
-                {getChildren()}
-                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-black border border-white/20 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-                    {attrs.text}
-                </span>
-            </span>
-        );
-    case 'param':
-      return (
-        <div key={key} className="flex items-start gap-3 text-sm py-2 ml-1 border-b border-white/[0.03] last:border-0">
-           <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-orange-500/50 shrink-0 shadow-[0_0_5px_rgba(249,115,22,0.5)]" />
-           <div>
-               <div className="flex items-baseline gap-2">
-                    <span className="text-gray-200 font-bold font-mono">{attrs.name}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 border border-white/10 px-1 rounded bg-white/5">{attrs.type}</span>
-                    {attrs.req === 'true' && <span className="text-[10px] text-red-400">required</span>}
-               </div>
-               <span className="text-gray-400 text-sm mt-0.5 block">{getChildren()}</span>
-           </div>
-        </div>
-      );
-
-    default:
-      // Fallback: If we don't know the tag, just render its children
-      // Better to show unstyled text than to crash
-      return <span key={key}>{getChildren()}</span>;
+    case 'code': return <code key={key} className="bg-[#1a1a1e] border border-white/10 rounded px-1.5 py-0.5 text-sm font-mono text-orange-300">{getChildren()}</code>;
+    case 'link': return <a key={key} href={attrs.href} className="text-orange-400 hover:underline">{getChildren()}</a>;
+    default: return <React.Fragment key={key}>{getChildren()}</React.Fragment>;
   }
 };
 
-const DynamicIcon = ({ name }: { name: string }) => {
-    // TODO: Dynamic imports would be nicer, but this is fast and dumb
-    const map: any = { globe: Globe, server: Server, credit: CreditCard, layout: Layout, hash: Hash, zap: Zap, list: List, mouse: MousePointerClick };
-    const I = map[name] || Hash;
-    return <I size={24} />;
-}
-
-//
-//
-//
-//
-//  ROOT WRAPPER
-//  DOMParser is extremely sensitive. If you feed it XML with multiple
-//  root nodes (e.g. <h1/><p/>), it throws an error or drops data
-//  So we wrap the user's input in a fake <root> tag
-//
-//
-//
-export const DocRenderer = ({ source }: { source: string }) => {
-  const content = React.useMemo(() => {
+export const DocRenderer = memo(({ source }: { source: string }) => {
+  const content = useMemo(() => {
     try {
-        const parser = new DOMParser();
-        const xmlString = `<root>${source}</root>`; 
-        const doc = parser.parseFromString(xmlString, 'text/xml');
-        
-        const errorNode = doc.querySelector('parsererror');
-        if (errorNode) {
-            console.error('XML Error:', errorNode.textContent);
-            return (
-                <div className="p-4 border border-red-500/50 bg-red-900/20 text-red-200 rounded-lg flex items-center gap-3">
-                    <AlertTriangle />
-                    <div>
-                        <h4 className="font-bold">XML Syntax Error</h4>
-                        <p className="text-sm opacity-70">Check closing tags and quotes in `docsContent.ts`. Also, escape your ampersands (&amp;).</p>
-                    </div>
-                </div>
-            );
+        let doc = parsedCache.get(source);
+        if (!doc) {
+            const parser = new DOMParser();
+            doc = parser.parseFromString(`<root>${source}</root>`, 'text/xml');
+            parsedCache.set(source, doc);
         }
-
+        
         const root = doc.querySelector('root');
-        if (!root) return null;
-
-        return Array.from(root.childNodes).map((node, i) => renderNode(node, i));
+        return root ? Array.from(root.childNodes).map((node, i) => renderNode(node, i)) : null;
     } catch (e) {
-        console.error(e);
-        return <div className="text-red-500">Critical Render Error</div>;
+        return <div className="text-red-500">Render Error</div>;
     }
   }, [source]);
 
   return <>{content}</>;
-};
+});
 
 export const extractNavigation = (source: string) => {
     try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(`<root>${source}</root>`, 'text/xml');
-        const sections = Array.from(doc.querySelectorAll('section'));
-        return sections.map(sec => ({
+        let doc = parsedCache.get(source);
+        if (!doc) {
+            const parser = new DOMParser();
+            doc = parser.parseFromString(`<root>${source}</root>`, 'text/xml');
+            parsedCache.set(source, doc);
+        }
+        return Array.from(doc.querySelectorAll('section')).map(sec => ({
             id: sec.getAttribute('id') || '',
             title: sec.getAttribute('title') || 'Untitled',
             icon: sec.getAttribute('icon') || 'hash'
         }));
-    } catch (e) {
-        return [];
-    }
+    } catch (e) { return []; }
 };

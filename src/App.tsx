@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, ChevronRight, Fingerprint, PieChart } from 'lucide-react';
 import FallingItems from './components/FallingItems';
 import Transition from './components/Transition';
-import Documentation from './components/Documentation';
-import Premium from './components/Premium';
+
+// Lazy loading added
+const Documentation = lazy(() => import('./components/Documentation'));
+const Premium = lazy(() => import('./components/Premium'));
 
 const HERO_TITLES = [
   "Server analytics on a new level",
@@ -19,7 +21,6 @@ type ViewState = 'home' | 'docs' | 'premium';
 function App() {
   const [heroTitle, setHeroTitle] = useState("");
   const [showTransition, setShowTransition] = useState(false);
-  
   const [view, setView] = useState<ViewState>('home');
 
   useEffect(() => {
@@ -27,43 +28,43 @@ function App() {
     setHeroTitle(randomTitle);
   }, []);
 
-  const handleNavigation = (targetView: ViewState) => {
-    if (view === targetView) return;
-    
+  // Prefetch component code on hover to eliminate lag
+  const prefetchView = (target: ViewState) => {
+    if (target === 'docs') import('./components/Documentation');
+    if (target === 'premium') import('./components/Premium');
+  };
+
+const handleNavigation = (targetView: ViewState) => {
+  if (view === targetView) return;
+
+  const conn = (navigator as any).connection;
+  const isSlow = conn && (conn.saveData || ['slow-2g', '2g', '3g'].includes(conn.effectiveType));
+
+  if (isSlow) {
     setShowTransition(true); 
-    
     setTimeout(() => {
       setView(targetView);
     }, 1000);
-  };
-
-  // We use early returns to keep the DOM clean.
-
-  if (view === 'docs') {
-    return (
-      <>
-        {showTransition && <Transition onComplete={() => setShowTransition(false)} />}
-        <Documentation onBack={() => handleNavigation('home')} />
-      </>
-    );
+  } else {
+    // Instant switch for fast connections
+    setView(targetView);
   }
+};
 
-  if (view === 'premium') {
-    return (
-      <>
-        {showTransition && <Transition onComplete={() => setShowTransition(false)} />}
-        <Premium onBack={() => handleNavigation('home')} />
-      </>
-    );
-  }
+if (view === 'docs') {
+  return (
+    <Suspense fallback={null}>
+      {showTransition && <Transition onComplete={() => setShowTransition(false)} />}
+      <Documentation onBack={() => handleNavigation('home')} />
+    </Suspense>
+  );
+}
 
-  // HOME VIEW
   return (
     <div className="relative min-h-screen bg-[#0f0f12] text-white selection:bg-orange-500/30 overflow-hidden font-sans flex flex-col">
       
       {showTransition && <Transition onComplete={() => setShowTransition(false)} />}
 
-      {/* Ambient BG */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute top-[-20%] left-[20%] w-[50%] h-[50%] bg-orange-600/10 rounded-full blur-[150px]" />
         <div className="absolute bottom-[-10%] right-[20%] w-[40%] h-[40%] bg-purple-900/10 rounded-full blur-[150px]" />
@@ -81,9 +82,27 @@ function App() {
           </div>
           
           <div className="hidden md:flex gap-8 text-sm font-medium text-gray-400">
-              <button onClick={() => handleNavigation('docs')} className="hover:text-orange-400 transition-colors">Features</button>
-              <button onClick={() => handleNavigation('docs')} className="hover:text-orange-400 transition-colors">Commands</button>
-              <button onClick={() => handleNavigation('premium')} className="hover:text-orange-400 transition-colors">Premium</button>
+              <button 
+                onMouseEnter={() => prefetchView('docs')}
+                onClick={() => handleNavigation('docs')} 
+                className="hover:text-orange-400 transition-colors"
+              >
+                Features
+              </button>
+              <button 
+                onMouseEnter={() => prefetchView('docs')}
+                onClick={() => handleNavigation('docs')} 
+                className="hover:text-orange-400 transition-colors"
+              >
+                Commands
+              </button>
+              <button 
+                onMouseEnter={() => prefetchView('premium')}
+                onClick={() => handleNavigation('premium')} 
+                className="hover:text-orange-400 transition-colors"
+              >
+                Premium
+              </button>
           </div>
           
           <button className="relative group px-6 py-2 rounded-full overflow-hidden bg-white/5 border border-white/10 hover:border-orange-500/50 transition-all duration-300 backdrop-blur-sm">
@@ -119,6 +138,7 @@ function App() {
               </button>
               
               <button 
+                onMouseEnter={() => prefetchView('docs')}
                 onClick={() => handleNavigation('docs')}
                 className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold rounded-xl transition-all border border-white/10 backdrop-blur-sm active:scale-95"
               >

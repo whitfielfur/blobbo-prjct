@@ -212,5 +212,4 @@ export const DOCS_XML = `
         The bot will send a welcome message. Enjoy!
     </step>
   </section>
-    <h2>See the docsContent.ts yourself!</h2>
 `;

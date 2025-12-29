@@ -1,12 +1,11 @@
-import { useState, useMemo } from 'react';
-import { ArrowLeft, Book, Zap, Layout, Server, Globe, Hash, CreditCard } from 'lucide-react';
+import { useState, useMemo, useCallback, memo } from 'react';
+import { ArrowLeft, Globe, Server, Layout, CreditCard, Hash } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-// Импорты ваших файлов
 import { DocRenderer, extractNavigation } from '../lib/DocEngine';
 import { DOCS_XML } from '../data/docsContent';
 
-const iconMap: any = {
+const iconMap: Record<string, JSX.Element> = {
     globe: <Globe size={18} />,
     server: <Server size={18} />,
     layout: <Layout size={18} />,
@@ -22,10 +21,16 @@ const Documentation = ({ onBack }: DocumentationProps) => {
   const sections = useMemo(() => extractNavigation(DOCS_XML), []);
   const [activeId, setActiveId] = useState(sections[0]?.id || '');
 
-  const scrollTo = (id: string) => {
+  const scrollTo = useCallback((id: string) => {
     setActiveId(id);
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
+  }, []);
 
   return (
     <div className="min-h-screen flex bg-[#0f0f12] text-gray-300 font-sans selection:bg-orange-500/30 overflow-hidden">
@@ -74,7 +79,7 @@ const Documentation = ({ onBack }: DocumentationProps) => {
         <div className="max-w-5xl p-6 md:p-16">
             
             <button onClick={onBack} className="md:hidden flex items-center gap-2 text-gray-400 mb-8 hover:text-white transition-colors">
-                <ArrowLeft size={18} /> Назад
+                <ArrowLeft size={18} /> Back
             </button>
 
             <motion.div 
@@ -84,7 +89,6 @@ const Documentation = ({ onBack }: DocumentationProps) => {
                 className="pb-32"
             >
                 <DocRenderer source={DOCS_XML} />
-                
             </motion.div>
         </div>
       </main>
@@ -93,4 +97,4 @@ const Documentation = ({ onBack }: DocumentationProps) => {
   );
 };
 
-export default Documentation;
+export default memo(Documentation);

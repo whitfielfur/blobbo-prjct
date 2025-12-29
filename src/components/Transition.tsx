@@ -1,19 +1,24 @@
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface TransitionProps {
   onComplete: () => void;
 }
 
 const Transition = ({ onComplete }: TransitionProps) => {
+  const [shouldRender, setShouldRender] = useState(false);
+
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const renderTimer = setTimeout(() => setShouldRender(true), 250);
+    const completionTimer = setTimeout(() => {
       onComplete();
     }, 2000);
-
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(renderTimer);
+      clearTimeout(completionTimer);
+    };
   }, [onComplete]);
-
+  if (!shouldRender) return null;
   return (
     <motion.div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f0f12]/90 backdrop-blur-sm"
@@ -32,7 +37,6 @@ const Transition = ({ onComplete }: TransitionProps) => {
         className="relative w-16 h-16"
       >
         <div className="absolute inset-0 border-4 border-orange-500/20 rounded-full" />
-        
         <div className="absolute inset-0 border-4 border-orange-500 rounded-full border-t-transparent border-l-transparent drop-shadow-[0_0_10px_rgba(249,115,22,0.5)]" />
       </motion.div>
     </motion.div>

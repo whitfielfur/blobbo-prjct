@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
 const TOTAL_IMAGES = 25; 
 
-const FallingItems = () => {
+const FallingItems = memo(() => {
   const [items, setItems] = useState<{ 
     id: number; 
     left: number; 
@@ -55,18 +55,23 @@ const FallingItems = () => {
               ease: "easeInOut"
             }
           }}
-          style={{ left: `${item.left}%` }}
+          style={{ 
+            left: `${item.left}%`,
+            // Trigger hardware acceleration
+            willChange: 'transform, opacity' 
+          }}
           className="absolute top-0 w-8 h-8 md:w-10 md:h-10"
         >
           <img 
-            src={`/blobfox/${item.imgIndex}.png`} 
+            src={`/blobfox/${item.imgIndex}.avif`} 
             alt="floating blob" 
+            loading="lazy"
             className="w-full h-full object-contain opacity-25 blur-[0.5px] grayscale-[0.3]" 
           />
         </motion.div>
       ))}
     </motion.div>
   );
-};
+});
 
 export default FallingItems;
