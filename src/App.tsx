@@ -46,8 +46,8 @@ const handleNavigation = (targetView: ViewState) => {
       setView(targetView);
     }, 1000);
   } else {
-    // Instant switch for fast connections
     setView(targetView);
+    setShowTransition(false);
   }
 };
 
@@ -56,6 +56,15 @@ if (view === 'docs') {
     <Suspense fallback={null}>
       {showTransition && <Transition onComplete={() => setShowTransition(false)} />}
       <Documentation onBack={() => handleNavigation('home')} />
+    </Suspense>
+  );
+}
+
+if (view === 'premium') {
+  return (
+    <Suspense fallback={null}>
+      {showTransition && <Transition onComplete={() => setShowTransition(false)} />}
+      <Premium onBack={() => handleNavigation('home')} />
     </Suspense>
   );
 }
