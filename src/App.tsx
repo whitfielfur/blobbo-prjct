@@ -232,7 +232,7 @@ if (view === 'premium') {
       </main>
       
       <footer className="w-full border-t border-white/5 py-8 text-center text-gray-600 text-sm">
-        <p>© 2025 Blobbo Analytics. Not affiliated with Discord.</p>
+        <p>© 2026 Blobbo Analytics. Not affiliated with Discord.</p>
       </footer>
     </div>
   )
