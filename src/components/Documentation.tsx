@@ -35,13 +35,11 @@ const Documentation = ({ onBack }: DocumentationProps) => {
   return (
     <div className="min-h-screen flex bg-[#0f0f12] text-gray-300 font-sans selection:bg-orange-500/30 overflow-hidden">
       
-      {/* Background Ambience */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
          <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-orange-900/5 rounded-full blur-[150px]" />
          <div className="absolute bottom-[-10%] left-[-5%] w-[40%] h-[40%] bg-blue-900/5 rounded-full blur-[150px]" />
       </div>
 
-      {/* Sidebar */}
       <aside className="fixed top-0 left-0 w-64 h-screen border-r border-white/5 bg-[#0f0f12]/95 backdrop-blur-md z-20 hidden md:flex flex-col p-6">
         <div 
             onClick={onBack}
@@ -73,7 +71,6 @@ const Documentation = ({ onBack }: DocumentationProps) => {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 md:ml-64 h-screen overflow-y-auto relative z-10 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         
         <div className="max-w-5xl p-6 md:p-16">

@@ -1,6 +1,6 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { motion } from 'framer-motion';
-import { Activity, ChevronRight, Fingerprint, PieChart } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Activity, ChevronRight, Fingerprint, PieChart, Menu, X } from 'lucide-react';
 import FallingItems from './components/FallingItems';
 import Transition from './components/Transition';
 
@@ -22,6 +22,28 @@ function App() {
   const [heroTitle, setHeroTitle] = useState("");
   const [showTransition, setShowTransition] = useState(false);
   const [view, setView] = useState<ViewState>('home');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    const handleResize = () => {
+    if (window.innerWidth >= 768) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isMenuOpen]);
 
   useEffect(() => {
     const randomTitle = HERO_TITLES[Math.floor(Math.random() * HERO_TITLES.length)];
@@ -35,6 +57,7 @@ function App() {
   };
 
 const handleNavigation = (targetView: ViewState) => {
+  setIsMenuOpen(false);
   if (view === targetView) return;
 
   const conn = (navigator as any).connection;
@@ -81,8 +104,8 @@ if (view === 'premium') {
 
       <FallingItems />
 
-      <nav className="relative z-50 w-full bg-transparent pt-6">
-        <div className="flex items-center justify-between px-6 max-w-7xl mx-auto">
+<nav className="relative z-50 w-full bg-transparent pt-6">
+        <div className="flex items-center justify-between px-6 max-w-7xl mx-auto relative z-50">
           
           <div className="cursor-pointer group select-none" onClick={() => handleNavigation('home')}>
               <span className="inline-block pr-2 text-3xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-orange-300 via-orange-500 to-orange-700 drop-shadow-[0_0_15px_rgba(249,115,22,0.4)] group-hover:brightness-110 transition-all">
@@ -114,14 +137,58 @@ if (view === 'premium') {
               </button>
           </div>
           
-          <button className="relative group px-6 py-2 rounded-full overflow-hidden bg-white/5 border border-white/10 hover:border-orange-500/50 transition-all duration-300 backdrop-blur-sm">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/10 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <span className="relative font-semibold text-sm text-gray-300 group-hover:text-orange-400 transition-colors duration-300 flex items-center gap-2">
-              Login
-            </span>
-          </button>
+          <div className="flex items-center gap-4">
+            <button className="relative group px-6 py-2 rounded-full overflow-hidden bg-white/5 border border-white/10 hover:border-orange-500/50 transition-all duration-300 backdrop-blur-sm z-50">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/10 to-orange-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <span className="relative font-semibold text-sm text-gray-300 group-hover:text-orange-400 transition-colors duration-300 flex items-center gap-2">
+                Login
+              </span>
+            </button>
+
+            <button 
+              className="md:hidden p-2 text-gray-300 hover:text-white transition-colors z-50 relative"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
         </div>
-      </nav>
+
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-40 bg-[#0f0f12] flex flex-col items-center justify-center"
+            >
+              <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-orange-600/10 rounded-full blur-[120px] pointer-events-none" />
+
+              <div className="flex flex-col items-center gap-10 text-3xl font-bold tracking-tight z-10">
+                <button 
+                  onClick={() => handleNavigation('docs')} 
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  Features
+                </button>
+                <button 
+                  onClick={() => handleNavigation('docs')} 
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  Commands
+                </button>
+                <button 
+                  onClick={() => handleNavigation('premium')} 
+                  className="text-orange-500 hover:text-orange-400 transition-colors"
+                >
+                  Premium
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>  
 
       <main className="relative z-10 flex-grow flex flex-col justify-center items-center max-w-5xl mx-auto px-6 py-20">
         
@@ -142,7 +209,7 @@ if (view === 'premium') {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button className="w-full sm:w-auto px-8 py-4 bg-orange-600 hover:bg-orange-500 hover:scale-105 text-white font-bold rounded-xl transition-all shadow-[0_0_40px_-10px_rgba(234,88,12,0.4)] ring-1 ring-white/10">
                 <span className="flex items-center justify-center gap-2">
-                  Invite Bot <ChevronRight className="w-4 h-4" />
+                  Invite Bot <ChevronRight className="w-4 h-4" /> 
                 </span>
               </button>
               
